@@ -13,7 +13,7 @@ export async function webHandler(r:Request):Promise<Response>{
 export default async function handler(req:IncomingMessage,res:ServerResponse){
  try{
   const host=String(req.headers.host||''),origin='https://'+host;
-  const allowed=[process.env.APP_ORIGIN,process.env.VERCEL_URL&&'https://'+process.env.VERCEL_URL,process.env.VERCEL_PROJECT_PRODUCTION_URL&&'https://'+process.env.VERCEL_PROJECT_PRODUCTION_URL].filter(Boolean);
+  const allowed=[process.env.APP_ORIGIN,'https://nyra-ai-kappa.vercel.app',process.env.VERCEL_URL&&'https://'+process.env.VERCEL_URL,process.env.VERCEL_PROJECT_PRODUCTION_URL&&'https://'+process.env.VERCEL_PROJECT_PRODUCTION_URL].filter(Boolean);
   if(!allowed.includes(origin)){res.writeHead(400);res.end('Use the Nyra application URL.');return;}
   const headers=new Headers();for(const[k,v]of Object.entries(req.headers))if(v&&!k.startsWith('oai-'))headers.set(k,Array.isArray(v)?v.join(','):v);
   const chunks:Buffer[]=[];let length=0;for await(const c of req){length+=c.length;if(length>16000){res.writeHead(413);res.end('Request is too large.');return;}chunks.push(c);}

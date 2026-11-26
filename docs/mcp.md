@@ -1,12 +1,12 @@
 # Nyra MCP
 
-The hosted endpoint is `https://nyra-ai-kappa.vercel.app/mcp`. It supports stateless JSON-RPC over HTTP POST. Configure a client that supports a remote HTTP MCP server:
+The hosted endpoint is `https://nyraagent.online/mcp`. It supports stateless JSON-RPC over HTTP POST. Configure a client that supports a remote HTTP MCP server:
 
 ```json
 {
   "mcpServers": {
     "nyra": {
-      "url": "https://nyra-ai-kappa.vercel.app/mcp"
+      "url": "https://nyraagent.online/mcp"
     }
   }
 }
@@ -31,11 +31,11 @@ Use `tools/list` to inspect the current schemas. Successful calls include `readA
 ## Check the endpoint
 
 ```sh
-curl --fail-with-body https://nyra-ai-kappa.vercel.app/mcp \
+curl --fail-with-body https://nyraagent.online/mcp \
   -H 'Content-Type: application/json' \
   --data '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
-curl --fail-with-body https://nyra-ai-kappa.vercel.app/mcp \
+curl --fail-with-body https://nyraagent.online/mcp \
   -H 'Content-Type: application/json' \
   --data '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"rh_network","arguments":{}}}'
 ```

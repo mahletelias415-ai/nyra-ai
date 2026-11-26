@@ -2,6 +2,7 @@ import { renderResearch, askResearch, researchBusy, bindResearch } from './resea
 import {createPortrait} from './portrait.js';
 import { request, proveWallet, signIn } from './workspace-client.js';
 import { presets, parseOrder, compareReading } from './plan-core.js';
+import {questionIntent} from './intent.js';
 const $ = s => document.querySelector(s), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const emptyFeedMarkup = $('#feed-items').innerHTML;
 const key = 'nyra-public-page-watches-v1';
@@ -11,7 +12,7 @@ try {
 }
 catch { }
 let watches = Array.isArray(saved?.watches) ? saved.watches.slice(0, 4).map(w => ({ ...w, paused: true, running: false })) : [], readings = Array.isArray(saved?.readings) ? saved.readings.slice(0, 30) : [], current = null, currentRead = null, busy = false;
-let server = null, workspaceError = '', walletBusy = false;
+let server = null, workspaceError = '', walletBusy = false, questionBusy=false, pendingResearchPrompt='';
 function persist() { if (server?.signedIn)
     return; try {
     localStorage.setItem(key, JSON.stringify({ watches, readings }));
@@ -166,9 +167,34 @@ async function order(text) { await initialWorkspace; if (busy) {
 catch (e) {
     toast(e.message);
 } }
-async function askOrPlan(text) { await initialWorkspace; if(/\b(watch|alert|notify|tell me when|let me know|keep an eye)\b/i.test(text)){try{if(parseOrder(text).canWatch){await order(text);return;}}catch{}} if(server?.ai.configured){$('#research-prompt').value=text;$('#research').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});await askResearch(text,loadWorkspace);}else await order(text); }
-$('#hero-form').addEventListener('submit', e => { e.preventDefault(); void askOrPlan($('#order-top').value || presets.price); });
-$('#desk-form').addEventListener('submit', e => { e.preventDefault(); void askOrPlan($('#order-desk').value); });
+function questionFeedback(text){$('#hero-feedback').textContent=text;}
+async function askOrPlan(text){
+ await initialWorkspace;
+ if(researchBusy()){questionFeedback('Nyra is still reading your previous question.');return;}
+ const intent=questionIntent(text,{signedIn:!!server?.signedIn,aiConfigured:!!server?.ai?.configured});
+ if(intent.kind==='empty'||intent.kind==='unavailable'){questionFeedback(intent.message);toast(intent.message);return;}
+ if(intent.kind==='plan'){questionFeedback('Opening your reading and watch plan below.');await order(intent.text);return;}
+ $('#research-prompt').value=intent.text;
+ $('#research').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+ if(intent.kind==='signin'){
+  pendingResearchPrompt=intent.text;
+  questionFeedback('Your question is ready below. Sign in with your wallet to get the AI answer.');
+  $('#ai-status').textContent='Your question is ready. Sign in with your wallet to continue.';
+  $('#research-send').focus({preventScroll:true});return;
+ }
+ pendingResearchPrompt='';questionFeedback('Nyra is preparing your answer or mission draft below.');
+ await askResearch(intent.text,loadWorkspace);
+ questionFeedback('Your saved answer or Scout draft is below.');
+}
+$('#hero-form').addEventListener('submit',async e=>{
+ e.preventDefault();if(questionBusy)return;
+ const text=$('#order-top').value.trim();
+ if(!text){questionFeedback('Type a question or choose a quick start below.');$('#order-top').focus();return;}
+ questionBusy=true;const button=$('#hero-form button[type=submit]');button.disabled=true;button.textContent='Opening…';$('#hero-form').setAttribute('aria-busy','true');
+ try{await askOrPlan(text);}catch(error){questionFeedback(error.message||'Nyra could not open this question. Please try again.');}
+ finally{questionBusy=false;button.disabled=false;button.textContent='Ask Nyra';$('#hero-form').removeAttribute('aria-busy');}
+});
+$('#desk-form').addEventListener('submit',e=>{e.preventDefault();void askOrPlan($('#order-desk').value).catch(error=>toast(error.message));});
 document.addEventListener('click', async (e) => { const preset = e.target.closest('[data-preset]'); if (preset) {
     void order(presets[preset.dataset.preset]);
     return;
@@ -232,6 +258,7 @@ async function connectWallet() { await initialWorkspace; if(walletBusy)return; w
     await proveWallet();
     await loadWorkspace();
     toast('Wallet verified. Your server workspace is ready.');
+    if(pendingResearchPrompt){const prompt=pendingResearchPrompt;pendingResearchPrompt='';await askOrPlan(prompt);}
 }
 catch (e) {
     toast(e.code === 4001 ? 'Wallet sign-in was cancelled.' : e.message);
@@ -276,12 +303,12 @@ const initialWorkspace = loadWorkspace();
 // A dense point portrait assembles on arrival; chapter changes keep the face intact.
 const portraitRenderer = createPortrait($('#portrait'), '/assets/nyra-portrait.jpg');
 function draw(time = 0) { portraitRenderer.render(time); }
-const chapters = [['Meet Nyra.<br>Your eyes on<br>Robinhood Chain.', 'Give her a wallet, a stock or a launch to follow. Nyra brings back the reading, the change and the source. You decide what happens next.'], ['A plain order.<br><span>A precise<br>watch plan.</span>', 'Choose the address, the stock or the trigger. See the sources before you start watching.'], ['Read the source.<br><span>Keep the<br>evidence.</span>', 'Every result carries a source and a timestamp. An unknown check stays unknown.'], ['Keep one eye<br><span>on what<br>changes.</span>', 'Start from a baseline. Only detected changes become alerts. Page watches pause when this page closes.'], ['Your keys.<br><span>Your decision.<br>Always.</span>', 'No transaction requests. No private keys. Your sentry reports; the next move belongs to you.']];
+const chapters = [['Meet Nyra.<br>Your eyes on<br>Robinhood Chain.', 'Give her a wallet, a stock or a launch to follow. Nyra brings back the reading, the change and the source. You decide what happens next.'], ['A plain order.<br><span>A precise<br>watch plan.</span>', 'Choose the address, the stock or the trigger. See the sources before you start watching.'], ['Read the source.<br><span>Keep the<br>evidence.</span>', 'Every result carries a source and a timestamp. An unknown check stays unknown.'], ['Keep one eye<br><span>on what<br>changes.</span>', 'Start from a baseline. Only detected changes become alerts. Page watches pause when this page closes.'], ['Your keys.<br><span>Your decision.<br>Always.</span>', 'Your research agent never signs. Optional NYRA packs are reviewed and sent in your wallet. Your sentry reports; the next move belongs to you.']];
 for (const b of document.querySelectorAll('[data-chapter]'))
     b.onclick = () => { const chapter = Number(b.dataset.chapter); portraitRenderer.setChapter(chapter); document.querySelectorAll('[data-chapter]').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', String(x === b)); }); $('#hero-title').innerHTML = chapters[chapter][0]; $('#hero-description').innerHTML = chapters[chapter][1];  };
 
 for(const b of document.querySelectorAll('[data-chapter]')) b.setAttribute('aria-pressed',String(b.classList.contains('active')));
-function applyServer(data) { server = data; workspaceError = ''; watches = data.watches; readings = data.readings; renderFeed(); renderWatches(); renderAccount(); renderResearch(data); }
+function applyServer(data) { server = data; workspaceError = ''; watches = data.watches; readings = data.readings; renderFeed(); renderWatches(); renderAccount(); renderResearch(data); document.dispatchEvent(new CustomEvent('nyra:workspace',{detail:data})); }
 async function loadWorkspace() { try {
     applyServer(await request('/api/workspace'));
 }
@@ -293,7 +320,7 @@ catch (e) {
             renderFeed();
             renderWatches();
         }
-        server = null;
+        server = null; document.dispatchEvent(new CustomEvent('nyra:workspace',{detail:null}));
         renderResearch(null);
         workspaceError = '';
         renderAccount();
@@ -304,7 +331,7 @@ catch (e) {
         $('#workspace-wallet').textContent = 'Retry connection';
     }
 } }
-function renderAccount() { const connected = server?.signedIn; $('#workspace-status').textContent = connected ? (server.wallet ? 'Wallet verified · server workspace' : 'Signed in · verify your wallet to keep watch') : 'Sign a wallet message to save your watches across devices. No transaction or payment.'; $('#workspace-wallet').textContent = connected ? 'Switch wallet' : 'Sign in with wallet'; $('#wallet-button').textContent = connected && server.wallet ? server.wallet.slice(0, 6) + '…' + server.wallet.slice(-4) : 'Sign in with wallet'; $('#unlink-wallet').hidden = !connected;$('#unlink-wallet').textContent='Sign out'; $('#telegram-link').disabled = !connected || !server?.telegram.configured; $('#telegram-unlink').hidden = !server?.telegram.linked; $('#telegram-link').textContent = server?.telegram.linked ? 'Telegram connected' : server?.telegram.configured ? 'Connect Telegram' : 'Telegram · not configured'; $('#telegram-note').textContent = server?.telegram.linked ? 'Detected changes will be queued for your private chat.' : server?.telegram.configured ? 'Link your own chat with a one-time code.' : 'Delivery is prepared. A Nyra bot must be configured before messages can be sent.'; $('#build-brief').disabled = !connected; const heartbeat = server?.runner.lastFinishedAt; $('#runner-note').textContent = connected ? (heartbeat ? 'Last server check ' + time(heartbeat) + '. ' + (server.runner.scheduleConfigured ? 'Schedule: every hour.' : 'Background schedule not enabled yet.') : (server.runner.scheduleConfigured ? 'Waiting for the first background check. Schedule: every hour.' : 'Server storage ready. Background schedule not enabled yet.')) : 'Single readings work without a verified wallet.'; $('#watch-scope-note').textContent = connected ? 'These watches and readings are saved to your account. Pausing takes effect on the server. Readings keep their source and timestamp; delayed or failed source reads remain visible.' : 'Guest watches run every 60 seconds while this tab is open and online. Sign in and verify your wallet to save server watches that continue after the page closes.'; renderBrief(server?.brief); }
+function renderAccount() { const connected = server?.signedIn; $('#workspace-status').textContent = connected ? (server.wallet ? 'Wallet verified · server workspace' : 'Signed in · verify your wallet to keep watch') : 'Sign a wallet message to save your watches across devices. No transaction or payment.'; $('#workspace-wallet').textContent = connected ? 'Switch wallet' : 'Sign in with wallet'; $('#wallet-button').textContent = connected && server.wallet ? server.wallet.slice(0, 6) + '…' + server.wallet.slice(-4) : 'Sign in with wallet'; $('#unlink-wallet').hidden = !connected;$('#unlink-wallet').textContent='Sign out'; $('#telegram-link').disabled = !connected || !server?.telegram.configured; $('#telegram-unlink').hidden = !server?.telegram.linked; $('#telegram-link').textContent = !connected ? 'Sign in to connect Telegram' : server?.telegram.linked ? 'Telegram connected' : server?.telegram.configured ? 'Connect Telegram' : 'Telegram · not configured'; $('#telegram-note').textContent = !connected ? 'Sign in with your wallet, then connect your private Telegram chat using a one-time link.' : server?.telegram.linked ? 'Describe a Scout search in your private chat, review its conditions and confirm. Use /missions to edit a saved search. Changes and results stay in this workspace.' : server?.telegram.configured ? 'Link your own chat with a one-time code to receive alerts and manage Scout searches by message.' : 'Telegram delivery is not configured for this deployment.'; $('#build-brief').disabled = !connected; const heartbeat = server?.runner.lastFinishedAt; $('#runner-note').textContent = connected ? (heartbeat ? 'Last server check ' + time(heartbeat) + '. ' + (server.runner.scheduleConfigured ? 'Schedule: every hour.' : 'Background schedule not enabled yet.') : (server.runner.scheduleConfigured ? 'Waiting for the first background check. Schedule: every hour.' : 'Server storage ready. Background schedule not enabled yet.')) : 'Single readings work without a verified wallet.'; $('#watch-scope-note').textContent = connected ? 'These watches and readings are saved to your account. Pausing takes effect on the server. Readings keep their source and timestamp; delayed or failed source reads remain visible.' : 'Guest watches run every 60 seconds while this tab is open and online. Sign in and verify your wallet to save server watches that continue after the page closes.'; renderBrief(server?.brief); }
 function renderBrief(brief) { if (!brief) {
     $('#brief-content').innerHTML = '<p class="small">Build a factual summary from your saved readings. No invented market commentary.</p>';
     return;
@@ -338,7 +365,7 @@ catch (e) {
     toast(e.message);
 } };
 $('#unlink-wallet').onclick = async () => { try {
-    await request('/api/auth/logout', {});await loadWorkspace();toast('Signed out. Your saved workspace stays on the server.');
+    await request('/api/auth/logout', {}); pendingResearchPrompt = null;await loadWorkspace();toast('Signed out. Your saved workspace stays on the server.');
 }
 catch (e) {
     toast(e.message);
@@ -353,6 +380,15 @@ catch (e) {
     toast(e.message);
 } };
 
-$('#research-form').addEventListener('submit',async e=>{e.preventDefault();await initialWorkspace;if(!server?.signedIn){signIn();return;}if(researchBusy())return;await askResearch($('#research-prompt').value,loadWorkspace);});
+$('#research-form').addEventListener('submit',async e=>{e.preventDefault();await initialWorkspace;if(!server?.signedIn){pendingResearchPrompt=$('#research-prompt').value.trim();await connectWallet();return;}if(researchBusy())return;await askResearch($('#research-prompt').value,loadWorkspace);});
 
 bindResearch(loadWorkspace);
+
+document.addEventListener('nyra:refresh',()=>void loadWorkspace());
+
+const heroQuestion=$('#order-top');
+heroQuestion.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#hero-form').requestSubmit();}});
+heroQuestion.addEventListener('input',()=>{heroQuestion.style.height='auto';heroQuestion.style.height=Math.min(heroQuestion.scrollHeight,160)+'px';});
+
+// Late-loaded feature modules can read the workspace without missing its first event.
+export function currentWorkspace(){return server;}

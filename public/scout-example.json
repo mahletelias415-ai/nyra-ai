@@ -1,0 +1,175 @@
+{
+  "recordedAt": "2026-11-26T14:25:57.566Z",
+  "chainId": 4663,
+  "conditions": {
+    "requireRepo": true,
+    "requireOfficial": true,
+    "recentDays": 7,
+    "minLiquidity": 5000,
+    "maxCreatorLaunches": 3,
+    "maxLoss": 15,
+    "stage": "any",
+    "minProgress": 0,
+    "maxAgeDays": null,
+    "excludeCopies": false
+  },
+  "candidate": {
+    "address": "0x524988ccc8d7a23566e2fffb24b1b07e5aa2f134",
+    "name": "Idlex Network",
+    "symbol": "IDLEX",
+    "discoveredAt": "2026-11-26T14:22:08.742Z"
+  },
+  "checks": [
+    {
+      "label": "Token checks available",
+      "state": "pass",
+      "detail": "Corbel report with dated source observations."
+    },
+    {
+      "label": "Public repository",
+      "state": "pass",
+      "detail": "https://github.com/idlexnetwork/idlex"
+    },
+    {
+      "label": "Published contract",
+      "state": "pass",
+      "detail": "HEY project-to-contract evidence; not a token safety verdict."
+    },
+    {
+      "label": "Recent meaningful update",
+      "state": "pass",
+      "detail": "v0.4.0 · Embedding jobs, Qwen2.5 7B, NVDA payout checks"
+    },
+    {
+      "label": "Liquidity",
+      "state": "pass",
+      "detail": "$38,759.89"
+    },
+    {
+      "label": "Creator launch history",
+      "state": "pass",
+      "detail": "Created by 0xc444…0d61, through a launchpad: the pool is opened by the launchpad, not by the creator. That wallet launched 1 token; 0 of 1 with a known fate were drained."
+    },
+    {
+      "label": "Buy / sell simulation",
+      "state": "pass",
+      "detail": "Bought and sold back in a simulation on the v4 ETH pool 0xaec1…bf9d."
+    }
+  ],
+  "riskChecks": [
+    {
+      "id": "honeypot",
+      "name": "Honeypot",
+      "result": "pass",
+      "reason": "Bought and sold back in a simulation on the v4 ETH pool 0xaec1…bf9d.",
+      "metric": "−5.52% round trip",
+      "source": {
+        "from": "a simulated buy and sell on the v4 ETH pool 0xaec1…bf9d",
+        "block": "123630332",
+        "at": 1795702739887,
+        "partial": false
+      }
+    },
+    {
+      "id": "exit",
+      "name": "Exit now",
+      "result": "pass",
+      "reason": "A buyer-size bag sells into the pool as it is now.",
+      "metric": "94.4% of cost back",
+      "source": {
+        "from": "a simulated sell on the v4 ETH pool 0xaec1…bf9d",
+        "block": "123630332",
+        "at": 1795702739887,
+        "partial": false
+      }
+    },
+    {
+      "id": "tax",
+      "name": "Buy / sell tax",
+      "result": "pass",
+      "reason": "No transfer tax on buy or sell.",
+      "metric": "0.00% / 0.00%",
+      "source": {
+        "from": "a simulated buy and sell on the v4 ETH pool 0xaec1…bf9d",
+        "block": "123630332",
+        "at": 1795702739887,
+        "partial": false
+      }
+    },
+    {
+      "id": "owner",
+      "name": "Owner rights",
+      "result": "pass",
+      "reason": "No owner and no admin functions found in the code.",
+      "metric": null,
+      "source": {
+        "from": "the contract's code and storage",
+        "block": "123630332",
+        "at": 1795702739887,
+        "partial": false
+      }
+    },
+    {
+      "id": "liquidity",
+      "name": "Liquidity lock",
+      "result": "unknown",
+      "reason": "No positions found in the recent window; older ones were not read.",
+      "metric": null,
+      "source": {
+        "from": "the pool's liquidity positions",
+        "block": "123630332",
+        "at": 1795702739887,
+        "partial": true
+      }
+    },
+    {
+      "id": "ticker",
+      "name": "Ticker vs contract",
+      "result": "warn",
+      "reason": "12 other contracts also use IDLEX. Check the address, not the ticker.",
+      "metric": "13 × IDLEX",
+      "source": {
+        "from": "Corbel's index of every token on the chain",
+        "block": null,
+        "at": 1795702739887,
+        "partial": false
+      }
+    },
+    {
+      "id": "creator",
+      "name": "Creator history",
+      "result": "pass",
+      "reason": "Created by 0xc444…0d61, through a launchpad: the pool is opened by the launchpad, not by the creator. That wallet launched 1 token; 0 of 1 with a known fate were drained.",
+      "metric": "1 launch",
+      "source": {
+        "from": "Corbel's watch of every launchpad launch",
+        "block": null,
+        "at": 1795702739887,
+        "partial": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "name": "HEY builder evidence",
+      "url": "https://heyresearch.xyz/api/v1/builder?chain=4663&token=0x524988ccc8d7a23566e2fffb24b1b07e5aa2f134",
+      "readAt": "2026-11-26T14:22:12.777Z"
+    },
+    {
+      "name": "Corbel Token Check",
+      "url": "https://corbel.finance/api/token?q=0x524988ccc8d7a23566e2fffb24b1b07e5aa2f134",
+      "readAt": "2026-11-26T14:22:13.129Z"
+    },
+    {
+      "name": "GitHub repository API",
+      "url": "https://api.github.com/repos/idlexnetwork/idlex",
+      "readAt": "2026-11-26T14:30:25.163Z"
+    }
+  ],
+  "notice": "Dated public-source example from a completed scan. It is not a current token quote, security audit or recommendation. Private account and Telegram identifiers are omitted.",
+  "repositoryVerifiedAt": "2026-11-26T14:30:25.163Z",
+  "repository": {
+    "fullName": "idlexnetwork/idlex",
+    "public": true
+  }
+}

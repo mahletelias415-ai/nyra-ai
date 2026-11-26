@@ -19,7 +19,9 @@ No production database contents, local environment files or QA accounts are incl
 | --- | --- |
 | `TURSO_DATABASE_URL` | Your own database URL |
 | `TURSO_AUTH_TOKEN` | Server-only database credential |
-| `NYRA_AI_MODEL` | Gateway model ID; default `openai/gpt-4.1-mini` |
+| `NYRA_AI_PROVIDER` | `gateway` or `openai`; explicit routing only |
+| `NYRA_AI_MODEL` | `openai/gpt-4.1-mini` for the retained Gateway route, or `openai/gpt-6.2-sol` for direct OpenAI |
+| `OPENAI_API_KEY` | Your own server-only credential when selecting the direct OpenAI route |
 | `AI_GATEWAY_API_KEY` | Optional server-only Gateway credential, principally for local development |
 | `APP_ORIGIN` | Exact custom-domain origin, including HTTPS and excluding a trailing slash |
 | `CRON_SECRET` | Independent unpredictable secret for your scheduler |
@@ -28,7 +30,7 @@ No production database contents, local environment files or QA accounts are incl
 | `NYRA_TELEGRAM_BOT_USERNAME` | Optional bot username |
 | `NYRA_TELEGRAM_WEBHOOK_SECRET` | Optional independent Telegram webhook secret |
 
-On Vercel, enable project OIDC; `@vercel/oidc` obtains the request-scoped token for AI Gateway. Do not copy it into the browser or commit a token. The allowed host list uses `APP_ORIGIN` plus Vercel deployment/production host variables. Keep API requests on the same origin as the UI.
+For the Gateway route on Vercel, enable project OIDC; `@vercel/oidc` obtains the request-scoped token for AI Gateway. Do not copy it into the browser or commit a token. The allowed host list uses `APP_ORIGIN` plus Vercel deployment/production host variables. Keep API requests on the same origin as the UI.
 
 ## Background watches
 
@@ -46,4 +48,16 @@ The model runs only on the server. Source tools are allowlisted. Research reserv
 
 ## Telegram
 
-The public release currently has no bot. If you configure one, all three Telegram variables are required. Linking starts from the authenticated workspace and uses an expiring one-use token in a private bot chat. Never publish the bot token or webhook secret.
+The public installation uses @nyraagent_rhbot. A self-hosted deployment requires all three Telegram variables. Linking starts from the authenticated workspace and uses an expiring one-use token in a private bot chat. Never publish the bot token or webhook secret.
+
+## Token packs
+
+Apply migration 0005 before releasing the token utility code. The token address, 18 decimals and two pack prices are fixed in lib/payment-core.mjs. Never change an already prepared intent’s amount. RH_RPC_URL can override the public payment-verification RPC; use a trusted Robinhood Chain 4663 endpoint supporting safe blocks. Only wallet-authenticated callers can prepare or confirm packs. Never pre-credit pending transactions or seed paid credits in production for tests.
+
+## Scout and daily recaps
+
+Apply all numbered migrations through `0010_scout_briefs.sql`. They are additive schema migrations, not database exports. The hourly updater also processes due Scout missions, delivery retries and opted-in daily Scout recaps. No additional AI call or scheduler is needed for a recap.
+
+Register your own bot webhook at `/api/telegram/webhook` with the independent `NYRA_TELEGRAM_WEBHOOK_SECRET` as Telegram's secret token. Accept `message` updates. The bot uses ordinary private messages and reply keyboards; no callback-query permission is required. Link through a verified website account, then check `/missions`, an unconfirmed draft/refinement, `/scoutbrief` and `/daily`. Do not publish a real bot token in a command, URL example, workflow file or repository.
+
+Daily delivery defaults to off. Time settings use UTC and delivery occurs on the first available hourly server cycle after the chosen hour. Test with a dedicated account, confirm delivery and opt-out, and inspect source/runner failures without exporting another user's records.

@@ -1,4 +1,12 @@
-export async function request(path,data){const r=await fetch(path,{method:data===undefined?'GET':'POST',credentials:'same-origin',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});let d;try{d=await r.json();}catch{throw Error('The server returned an unreadable response. Reload and try again.');}if(!r.ok){const e=Error(d.error||'This action could not complete.');e.status=r.status;throw e;}return d;}
+export async function request(path,data){
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),path==='/api/agent/ask'?125000:path==='/api/scout/scan'?115000:30000);
+ try{
+  const r=await fetch(path,{method:data===undefined?'GET':'POST',credentials:'same-origin',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data),signal:controller.signal});
+  let d;try{d=await r.json();}catch{throw Error('The server returned an unreadable response. Reload and try again.');}
+  if(!r.ok){const e=Error(d.error||'This action could not complete.');e.status=r.status;throw e;}return d;
+ }catch(error){if(error.name==='AbortError')throw Error('Nyra took too long to respond. Your saved readings are preserved. Please try again.');throw error;}
+ finally{clearTimeout(timeout);}
+}
 const discovered=new Map();
 if(typeof window!=='undefined'){window.addEventListener('eip6963:announceProvider',e=>{if(e.detail?.provider&&e.detail?.info?.uuid)discovered.set(e.detail.info.uuid,e.detail);});window.dispatchEvent(new Event('eip6963:requestProvider'));}
 export function walletProvider(){return window.ethereum||[...discovered.values()][0]?.provider;}

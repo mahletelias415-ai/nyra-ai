@@ -11,3 +11,19 @@ qa/
 *.sqlite-*
 coverage/
 *.log
+
+# Local release work, internal notes, credentials and runtime exports
+TEMP-*
+.openai/
+.wrangler/
+outputs/
+exports/
+.cache/
+*.pem
+*.key
+*.p12
+*.pfx
+*.dump
+*.zip
+*.tar
+*.tgz

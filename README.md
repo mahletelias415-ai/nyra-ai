@@ -4,7 +4,7 @@
 
 An AI research desk for Robinhood Chain. Ask about a wallet, compare Stock Tokens or follow a Pons launch. Inspect the sources and tool calls, save the context, and return to the same workspace.
 
-[Open Nyra](https://nyra-ai-kappa.vercel.app/) · [X](https://x.com/Nyraaihq) · [MCP guide](docs/mcp.md) · [Deployment](docs/deployment.md)
+[Open Nyra](https://nyraagent.online/) · [X](https://x.com/Nyraaihq) · [MCP guide](docs/mcp.md) · [Deployment](docs/deployment.md)
 
 ## What works
 
